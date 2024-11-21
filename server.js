@@ -1,7 +1,7 @@
 const express = require("express")
 
 const app = express()
-const porta = 5812
+const porta = 3333
 
 function mostraPorta () {
     console.log("servidor criado e rodando na porta " , porta)

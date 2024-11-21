@@ -4,7 +4,7 @@ const router = express.Router()
 
 const app = express()
 
-const PORTA = 5812
+const PORTA = 3333
 
 function mostraHora(request, response) {
 

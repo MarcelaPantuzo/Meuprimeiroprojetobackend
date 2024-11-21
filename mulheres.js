@@ -1,61 +1,91 @@
-const express = require("express")
-const router = express.Router()
+const express = require("express"); // Iniciando o express
+const router = express.Router(); // Configurando o router
+const cors = require("cors"); //aqui estou trazendo o pacote Cors que permite consumir essa API no Frontend
+const conectaBancodeDados = require("./bancoDeDados"); // Ligando ao banco de dados
+conectaBancodeDados(); // Chamando a função que conecta o banco de dados
 
-const app = express()
-const porta = 5812
+const Mulher = require("./mulherModel");
 
-const mulheres = [
-  {
-    nome: "Larissa Alves" ,
-    imagem: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNzPbzuKIAJE8ZJbCCsgHMKrlZEr4Qb5yzPzYb2AJM_JAm7OdfRDsgqjqFf1QXBDzWbWA&usqp=CAU" , 
-    minibio: "Product Owner"  ,
-  },
+const app = express(); // Iniciando o app
+app.use(express.json());
+app.use(cors())
 
-  {
-nome: "Jullyane Maria" ,
-    imagem: "https://static.portaldaindustria.com.br/portaldaindustria/noticias/media/imagem_plugin/profissionalti.jpg" , 
-    minibio: "Desenvolvedora Back End" ,
-  },
+const porta = 3333; // Criando a porta
 
-  {
-        nome: "Amanda Silva" ,
-        imagem: "https://cdn.unasp.br/blog/wp-content/uploads/2018/02/shutterstock_671632789000.jpg" , 
-        minibio: "Quality Assurance" ,
-  },
-
-  {
-    nome: "Renata Guimarães" ,
-    imagem: "https://img.freepik.com/fotos-gratis/programador-afro-americano-sorridente-relaxando-olhando-para-conteudo-engracado-na-tela-do-computador-enquanto-digita-no-teclado-freelancer-rindo-com-amigos-enquanto-conversa-usando-pc-na-sala-de-estar-de-casa_482257-64564.jpg",
-    minibio: "Desenvolvedora Front End"
-  },
-
-  {
-    nome: "Debora Vasconcelos",
-    imagem: "https://producaodejogos.com/wp-content/uploads/2014/01/Game_artist.jpg", 
-    minibio: "Designer" ,
-  },
-
-  {
-    nome: "Lara Pereira",
-    imagem:"https://image.cdn2.seaart.ai/2024-08-20/cr2ave5e878c739nd3cg/dca898ebddd24e6560f36c74985507f6_high.webp",
-    minibio: "Analista de Requisitos",
-  },
-
-  {
-    nome: "Julia Campos",
-    imagem:"https://img.freepik.com/fotos-premium/mulher-asiatica-de-negocios-trabalhando-no-computador-portatil-no-escritorio-em-casa_1645-1377.jpg",
-    minibio: "Desenvolvedora Mobile",
-  },
-
-]
-
-function mostraMulheres (request, response) {
-    response.json(mulheres)
+// GET
+async function mostraMulheres(request, response) {
+  try {
+    const mulheresVindasDoBancoDeDados = await Mulher.find();
+    response.json(mulheresVindasDoBancoDeDados);
+  } catch (erro) {
+    response.status(500).json({ mensagem: "Erro ao buscar mulheres", erro });
+  }
 }
 
+// POST
+async function criaMulher(request, response) {
+  const novaMulher = new Mulher({
+    nome: request.body.nome,
+    imagem: request.body.imagem,
+    minibio: request.body.minibio,
+    citacao: request.body.citacao,
+  });
+
+  try {
+    const mulherCriada = await novaMulher.save();
+    response.status(201).json(mulherCriada);
+  } catch (erro) {
+    response.status(500).json({ mensagem: "Erro ao criar mulher", erro });
+  }
+}
+
+// PATCH
+async function corrigeMulher(request, response) {
+  try {
+    const mulherEncontrada = await Mulher.findById(request.params.id);
+
+    if (request.body.nome) {
+      mulherEncontrada.nome = request.body.nome;
+    }
+    if (request.body.minibio) {
+      mulherEncontrada.minibio = request.body.minibio;
+    }
+    if (request.body.imagem) {
+      mulherEncontrada.imagem = request.body.imagem;
+    }
+    if (request.body.citacao) {
+      mulherEncontrada.citacao = request.body.citacao;
+    }
+
+    const mulherAtualizadaNoBancoDeDados = await mulherEncontrada.save();
+    response.json(mulherAtualizadaNoBancoDeDados);
+  } catch (erro) {
+    response.status(500).json({ mensagem: "Erro ao atualizar mulher", erro });
+  }
+}
+
+// DELETE
+async function deletaMulher(request, response) {
+  try {
+    await Mulher.findByIdAndDelete(request.params.id);
+    response.json({ mensagem: "Mulher deletada com sucesso!" });
+  } catch (erro) {
+    response.status(500).json({ mensagem: "Erro ao deletar mulher", erro });
+  }
+}
+
+// ROTAS
+router.get("/mulheres", mostraMulheres);
+router.post("/mulheres", criaMulher);
+router.patch("/mulheres/:id", corrigeMulher);
+router.delete("/mulheres/:id", deletaMulher);
+
+// Usando o router no app
+app.use(router);
+
+// PORTA
 function mostraPorta() {
-    console.log("servidor criado e rodando na porta " , porta)
+  console.log("Servidor criado e rodando na porta", porta);
 }
 
-app.use(router.get("/mulheres", mostraMulheres))
-app.listen(porta, mostraPorta)
+app.listen(porta, mostraPorta); // Servidor ouvindo a porta
